@@ -1,0 +1,75 @@
+name: Wine ML CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+
+  # =========================
+  # CONTINUOUS INTEGRATION
+  # =========================
+
+  test:
+    name: CI - Train and Test Wine ML Model
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ML model
+        run: python model.py
+
+      - name: Run automated tests
+        run: pytest -v
+
+
+  # =========================
+  # CONTINUOUS DEPLOYMENT
+  # =========================
+
+  deploy:
+    name: CD - Deploy Wine ML Website to GitHub Pages
+
+    needs: test
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
